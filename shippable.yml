@@ -1,0 +1,42 @@
+resources:
+  - name: _infra_state
+    type: state
+
+  - name: gcp_params
+    type: params
+    version:
+      params:
+        image_project: ubuntu-os-cloud
+        image_family: ubuntu-1604-lts
+        boot_disk_size: 40GB
+        tags: "http-server,https-server,ship"
+        zone: us-east1-b
+        instance_name: shippable-onebox
+        secure: VVDCXmrdDIZjFhVM3rzKnCbKPaQQUw20Ri+7bbwYO2Aw0yLtEDnqPrpPA0U8nt17vpI6kQCZgwV/xgLiSDo1E7OBva3xLSkOO1CGyjXgS0W0mRN65B6KyQaBD7vHcmcWWIt/OyQg6EAFHPyj3UOpGgpp+t9uVFEgTAS5H68Ck+ReRwEkL9Y9jC4g66wxHvQ8J+FdQyUlMtJCNvivTC2zCkY7wT9ba5XdwUQHzHLhSp2AOxfQxgji4Iitg8OEt3k8zvy1cv048sUgqmqF/co3Fshz40vQVw7t0wlAWUNEnCgD1VNBXKKKGV58Y/s7TEXdQsTZPm90qMwPFrZrM69aSw==
+
+  - name: _infra_git_repo
+    type: gitRepo
+    integration: github
+    pointer:
+      sourceName: bharath92/_infra
+      branch: master
+
+  - name: gcp_cli_auth
+    type: cliConfig
+    integration: google_cloud
+    pointer:
+      region: us-east1-b
+
+jobs:
+  - name: create_and_bootstrap_gc_instace
+    type: runSh
+    steps:
+      - IN: gcp_cli_auth
+      - IN: gcp_params
+      - IN: _infra_git_repo
+        switch: off
+      - OUT: _infra_state
+      - TASK:
+          - script: pushd $(shipctl get_resource_state "_infra_git_repo")
+          - script: ./gcp.sh create
+          - script: popd
